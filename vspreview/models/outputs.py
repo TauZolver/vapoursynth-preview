@@ -24,6 +24,8 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
     def __init__(self, local_storage: Optional[Mapping[str, Output]] = None) -> None:
         super().__init__()
         self.items: List[Output] = []
+        self.vsindex_mapping: Dict[int] = {}
+        self.reverse_vsindex_mapping: Dict[int] = {}
 
         local_storage = local_storage if local_storage is not None else {}
 
@@ -38,8 +40,9 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
                 output.__init__(vs_output, i)  # type: ignore
             except KeyError:
                 output = Output(vs_output, i)
-
             self.items.append(output)
+            self.vsindex_mapping[i] = len(self.items)-1
+            self.reverse_vsindex_mapping[len(self.items) - 1] = i
 
     def __getitem__(self, i: int) -> Output:
         return self.items[i]
@@ -49,6 +52,18 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
 
     def index_of(self, item: Output) -> int:
         return self.items.index(item)
+
+    def get_index_by_vsindex(self, vsindex: int) -> int:
+        try:
+            return self.vsindex_mapping[vsindex]
+        except KeyError:
+            return -1
+
+    def get_vsindex_by_index(self, index: int) -> int:
+        try:
+            return self.reverse_vsindex_mapping[index]
+        except KeyError:
+            return -1
 
     def __getiter__(self) -> Iterator[Output]:
         return iter(self.items)

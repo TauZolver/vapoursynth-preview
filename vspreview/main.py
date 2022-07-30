@@ -111,13 +111,14 @@ class MainToolbar(AbstractToolbar):
 
         self.outputs = Outputs()
         self.outputs_combobox.setModel(self.outputs)
+        self.output_shortcuts = {}
 
         self.zoom_levels = ZoomLevels([
-            #0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, 8.0, 16.0
-            0.5, 1.0, 2.0, 4.0, 8.0, 16.0
+            0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, 8.0, 16.0
+            #0.5, 1.0, 2.0, 4.0, 8.0, 16.0
         ])
         self.zoom_combobox.setModel(self.zoom_levels)
-        self.zoom_combobox.setCurrentIndex(1)
+        self.zoom_combobox.setCurrentIndex(3)
 
         self.outputs_combobox.currentIndexChanged.connect(self.main.switch_output)
         self.frame_control          .valueChanged.connect(self.main.switch_frame)
@@ -128,16 +129,25 @@ class MainToolbar(AbstractToolbar):
         self.zoom_combobox    .currentTextChanged.connect(self.on_zoom_changed)
         self.switch_timeline_mode_button .clicked.connect(self.on_switch_timeline_mode_clicked)
 
-        add_shortcut(Qt.Qt.Key_1, lambda: self.main.switch_output(0))
-        add_shortcut(Qt.Qt.Key_2, lambda: self.main.switch_output(1))
-        add_shortcut(Qt.Qt.Key_3, lambda: self.main.switch_output(2))
-        add_shortcut(Qt.Qt.Key_4, lambda: self.main.switch_output(3))
-        add_shortcut(Qt.Qt.Key_5, lambda: self.main.switch_output(4))
-        add_shortcut(Qt.Qt.Key_6, lambda: self.main.switch_output(5))
-        add_shortcut(Qt.Qt.Key_7, lambda: self.main.switch_output(6))
-        add_shortcut(Qt.Qt.Key_8, lambda: self.main.switch_output(7))
-        add_shortcut(Qt.Qt.Key_9, lambda: self.main.switch_output(8))
-        add_shortcut(Qt.Qt.Key_0, lambda: self.main.switch_output(9))
+        add_shortcut(Qt.Qt.Key_Escape, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(0)))
+        self.output_shortcuts[1] = add_shortcut(Qt.Qt.Key_1, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(1)))
+        self.output_shortcuts[2] = add_shortcut(Qt.Qt.Key_2, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(2)))
+        self.output_shortcuts[3] = add_shortcut(Qt.Qt.Key_3, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(3)))
+        self.output_shortcuts[4] = add_shortcut(Qt.Qt.Key_4, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(4)))
+        self.output_shortcuts[5] = add_shortcut(Qt.Qt.Key_5, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(5)))
+        self.output_shortcuts[6] = add_shortcut(Qt.Qt.Key_6, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(6)))
+        self.output_shortcuts[7] = add_shortcut(Qt.Qt.Key_7, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(7)))
+        self.output_shortcuts[8] = add_shortcut(Qt.Qt.Key_8, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(8)))
+        self.output_shortcuts[9] = add_shortcut(Qt.Qt.Key_9, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(9)))
+        self.output_shortcuts[0] = add_shortcut(Qt.Qt.Key_0, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(0)))
+
+        add_shortcut(Qt.Qt.Key_Y, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(self.outputs.get_vsindex_by_index(self.outputs_combobox.currentIndex()) % 1000 + 1000)))
+        add_shortcut(Qt.Qt.Key_U, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(self.outputs.get_vsindex_by_index(self.outputs_combobox.currentIndex()) % 1000 + 2000)))
+        add_shortcut(Qt.Qt.Key_V, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(self.outputs.get_vsindex_by_index(self.outputs_combobox.currentIndex()) % 1000 + 3000)))
+        #add_shortcut(Qt.Qt.Key_R, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(self.outputs.get_vsindex_by_index(self.outputs_combobox.currentIndex()) + 4000)))
+        #add_shortcut(Qt.Qt.Key_G, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(self.outputs.get_vsindex_by_index(self.outputs_combobox.currentIndex()) + 5000)))
+        #add_shortcut(Qt.Qt.Key_B, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(self.outputs.get_vsindex_by_index(self.outputs_combobox.currentIndex()) + 6000)))
+        add_shortcut(Qt.Qt.Key_T, lambda: self.main.switch_output(self.outputs.get_index_by_vsindex(self.outputs.get_vsindex_by_index(self.outputs_combobox.currentIndex()) % 1000)))
         add_shortcut(Qt.Qt.Key_S,         self.sync_outputs_checkbox.click)
         add_shortcut(Qt.Qt.CTRL               + Qt.Qt.Key_Tab, lambda: self.main.switch_output(self.outputs_combobox.currentIndex() + 1))
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.SHIFT + Qt.Qt.Key_Tab, lambda: self.main.switch_output(self.outputs_combobox.currentIndex() - 1))
@@ -822,6 +832,93 @@ class MainWindow(AbstractMainWindow):
                 'Storage loading: failed to parse window state.'
                 ' Using default.')
 
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        if event.isAutoRepeat():
+            return
+        if event.key() == Qt.Qt.Key_F1:
+            self.change_output_shortcuts(100)
+        if event.key() == Qt.Qt.Key_F2:
+            self.change_output_shortcuts(200)
+        if event.key() == Qt.Qt.Key_F3:
+            self.change_output_shortcuts(300)
+        if event.key() == Qt.Qt.Key_F4:
+            self.change_output_shortcuts(400)
+        if event.key() == Qt.Qt.Key_F5:
+            self.change_output_shortcuts(500)
+        if event.key() == Qt.Qt.Key_F6:
+            self.change_output_shortcuts(600)
+        if event.key() == Qt.Qt.Key_F7:
+            self.change_output_shortcuts(700)
+        if event.key() == Qt.Qt.Key_F8:
+            self.change_output_shortcuts(800)
+        if event.key() == Qt.Qt.Key_F9:
+            self.change_output_shortcuts(900)
+
+    def keyReleaseEvent(self, event: QtGui.QKeyEvent) -> None:
+        if event.isAutoRepeat():
+            return
+        if event.key() == Qt.Qt.Key_F1:
+            self.change_output_shortcuts(0)
+        if event.key() == Qt.Qt.Key_F2:
+            self.change_output_shortcuts(0)
+        if event.key() == Qt.Qt.Key_F3:
+            self.change_output_shortcuts(0)
+        if event.key() == Qt.Qt.Key_F4:
+            self.change_output_shortcuts(0)
+        if event.key() == Qt.Qt.Key_F5:
+            self.change_output_shortcuts(0)
+        if event.key() == Qt.Qt.Key_F6:
+            self.change_output_shortcuts(0)
+        if event.key() == Qt.Qt.Key_F7:
+            self.change_output_shortcuts(0)
+        if event.key() == Qt.Qt.Key_F8:
+            self.change_output_shortcuts(0)
+        if event.key() == Qt.Qt.Key_F9:
+            self.change_output_shortcuts(0)
+
+    def change_output_shortcuts(self, hundreds: int = 0) -> None:
+        modify_shortcut_handler(
+                self.toolbars.main.output_shortcuts[1],
+                lambda: self.switch_output(self.toolbars.main.outputs.get_index_by_vsindex(hundreds + 1))
+        )
+        modify_shortcut_handler(
+                self.toolbars.main.output_shortcuts[2],
+                lambda: self.switch_output(self.toolbars.main.outputs.get_index_by_vsindex(hundreds + 2))
+        )
+        modify_shortcut_handler(
+                self.toolbars.main.output_shortcuts[3],
+                lambda: self.switch_output(self.toolbars.main.outputs.get_index_by_vsindex(hundreds + 3))
+        )
+        modify_shortcut_handler(
+                self.toolbars.main.output_shortcuts[4],
+                lambda: self.switch_output(self.toolbars.main.outputs.get_index_by_vsindex(hundreds + 4))
+        )
+        modify_shortcut_handler(
+                self.toolbars.main.output_shortcuts[5],
+                lambda: self.switch_output(self.toolbars.main.outputs.get_index_by_vsindex(hundreds + 5))
+        )
+        modify_shortcut_handler(
+                self.toolbars.main.output_shortcuts[6],
+                lambda: self.switch_output(self.toolbars.main.outputs.get_index_by_vsindex(hundreds + 6))
+        )
+        modify_shortcut_handler(
+                self.toolbars.main.output_shortcuts[7],
+                lambda: self.switch_output(self.toolbars.main.outputs.get_index_by_vsindex(hundreds + 7))
+        )
+        modify_shortcut_handler(
+                self.toolbars.main.output_shortcuts[8],
+                lambda: self.switch_output(self.toolbars.main.outputs.get_index_by_vsindex(hundreds + 8))
+        )
+        modify_shortcut_handler(
+                self.toolbars.main.output_shortcuts[9],
+                lambda: self.switch_output(self.toolbars.main.outputs.get_index_by_vsindex(hundreds + 9))
+        )
+        modify_shortcut_handler(
+                self.toolbars.main.output_shortcuts[0],
+                lambda: self.switch_output(self.toolbars.main.outputs.get_index_by_vsindex(hundreds + 0))
+        )            
+     
+    
 def main() -> None:
     from argparse import ArgumentParser
 

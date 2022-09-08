@@ -676,8 +676,8 @@ class SceningToolbar(AbstractToolbar):
                     src_video_path = Path(result.group(1))
         if src_video_path is not None:
             qp_file_path = Path(str(src_video_path) + ".qp")
-            print("Found", qp_file_path)
-            self.import_file(self.import_qp, qp_file_path, override_list_name='qp_file')
+            if qp_file_path.is_file():
+                self.import_file(self.import_qp, qp_file_path, override_list_name='qp_file')
 
     def on_import_file_clicked(self, checked: Optional[bool] = None) -> None:
         filter_str = ';;'.join(self.supported_file_types.keys())

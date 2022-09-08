@@ -659,6 +659,25 @@ class SceningToolbar(AbstractToolbar):
             self.remove_at_current_frame_button.click()
 
     # import
+    def on_script_loaded(self) -> None:
+        self.load_default_qp_file()
+
+    def load_default_qp_file(self) -> None:
+        src_video_path = None
+        with open(self.main.script_path) as f:
+            import re
+            find_path = re.compile("a\s*=\s*.{1}[\"\']([^\"\']+)[\"\']")
+            for line in f:
+                line = line.strip().replace("\t","")
+                if line and "#" == line[0]:
+                    continue
+                result = find_path.search(line)
+                if result and Path(result.group(1)).is_file():
+                    src_video_path = Path(result.group(1))
+        if src_video_path is not None:
+            qp_file_path = Path(str(src_video_path) + ".qp")
+            print("Found", qp_file_path)
+            self.import_file(self.import_qp, qp_file_path, override_list_name='qp_file')
 
     def on_import_file_clicked(self, checked: Optional[bool] = None) -> None:
         filter_str = ';;'.join(self.supported_file_types.keys())
@@ -671,9 +690,18 @@ class SceningToolbar(AbstractToolbar):
 
     @fire_and_forget
     @set_status_label('Importing scening list')
-    def import_file(self, import_func: Callable[[Path, SceningList, int], None], path: Path) -> None:
+    def import_file(self, import_func: Callable[[Path, SceningList, int], None], path: Path, override_list_name: str = None) -> None:
         out_of_range_count = 0
-        scening_list, scening_list_index = self.lists.add(path.stem)
+        if override_list_name is not None:
+            found = False
+            for scening_list, scening_list_index in self.lists.items:
+                if scening_list.name == override_list_name:
+                    found = True
+                    break
+            if not found:
+                scening_list, scening_list_index = self.lists.add(override_list_name)
+        else:
+            scening_list, scening_list_index = self.lists.add(path.stem)
 
         import_func(path, scening_list, out_of_range_count)
 
@@ -1233,14 +1261,24 @@ class SceningToolbar(AbstractToolbar):
         except (KeyError, TypeError):
             logging.warning('Storage loading: Scening: failed to parse label.')
 
+        ignore_current_list_index = False
         try:
-            self.lists = state['lists']
+            self.lists = SceningLists()
+            for scening_list in state['lists'].items:
+                if scening_list.name == "qp_file":
+                    ignore_current_list_index = True
+                    continue
+                self.lists.add_list(scening_list)
+            self.load_default_qp_file()
             self.items_combobox.setModel(self.lists)
         except (KeyError, TypeError):
             logging.warning('Storage loading: Scening: failed to parse lists.')
 
         try:
-            self.current_list_index = state['current_list_index']
+            if ignore_current_list_index:
+                self.current_list_index = -1
+            else:
+                self.current_list_index = state['current_list_index']
         except (KeyError, TypeError):
             logging.warning('Storage loading: Scening: failed to parse current'
                             ' list index.')

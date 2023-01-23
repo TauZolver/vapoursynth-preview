@@ -4,7 +4,7 @@ import logging
 import os
 from   pathlib  import Path
 import sys
-from   typing   import Any, cast, List, Mapping, Optional, Union
+from   typing   import Any, cast, List, Mapping, Optional, Union, Dict
 
 from   PyQt5       import Qt
 import vapoursynth as     vs
@@ -361,6 +361,7 @@ class MainWindow(AbstractMainWindow):
     }
     # status bar
     STATUS_FRAME_PROP = lambda prop: 'Type: %s' % (prop['_PictType'].decode('utf-8') if '_PictType' in prop else '?')
+    STATUS_TEXT_FUNC_NAME = 'vsp_text'
 
     BENCHMARK_FRAME_DATA_SHARING_FIX  =  True
     DEBUG_PLAY_FPS                    = False
@@ -401,7 +402,7 @@ class MainWindow(AbstractMainWindow):
         self.setWindowTitle('VSPreview')
         self.move(400, 0)
         self.setup_ui()
-
+        self.script_globals: Dict[str, Any] = dict()
         # global
 
         self.clipboard    = self.app.clipboard()
@@ -520,11 +521,15 @@ class MainWindow(AbstractMainWindow):
             self.external_args = external_args
         argv_orig = sys.argv
         sys.argv = [script_path.name]
+        self.script_globals.clear()
+        self.script_globals = dict([('__file__', sys.argv[0])] + self.external_args)
 
+        ast_compiled = compile(
+            self.script_path.read_text(encoding='utf-8'), sys.argv[0], 'exec', optimize=2
+        )
         try:
             # pylint: disable=exec-used
-            exec(self.script_path.read_text(encoding='utf-8'),
-                dict([('__file__', sys.argv[0])] + self.external_args))
+            exec(ast_compiled, self.script_globals)
         except Exception as e:  # pylint: disable=broad-except
             self.script_exec_failed = True
             logging.error(e)
@@ -658,7 +663,21 @@ class MainWindow(AbstractMainWindow):
         if render_frame:
             self.current_output.graphics_scene_item.setImage(self.render_frame(frame))
 
-        self.statusbar.frame_props_label.setText(MainWindow.STATUS_FRAME_PROP(self.current_output.cur_frame[0].props))
+        text = ''
+        if MainWindow.STATUS_TEXT_FUNC_NAME in self.current_output.cur_frame[0].props:
+            frame = self.current_output.cur_frame[0]
+            func = frame.props[MainWindow.STATUS_TEXT_FUNC_NAME]
+            if callable(func):
+                text = func(f=frame)
+            elif isinstance(func, bytes):
+                text = func.decode('utf-8')
+            elif isinstance(func, str):
+                text = func
+            else:
+                text = repr(func)
+        if text == '':
+            text = MainWindow.STATUS_FRAME_PROP(self.current_output.cur_frame[0].props)
+        self.statusbar.frame_props_label.setText(text)
 
     def switch_output(self, value: Union[int, Output]) -> None:
         if len(self.outputs) == 0:

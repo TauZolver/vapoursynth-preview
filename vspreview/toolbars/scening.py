@@ -664,20 +664,24 @@ class SceningToolbar(AbstractToolbar):
 
     def load_default_qp_file(self) -> None:
         src_video_path = None
-        with open(self.main.script_path) as f:
-            import re
-            find_path = re.compile("a\s*=\s*.{1}[\"\']([^\"\']+)[\"\']")
-            for line in f:
-                line = line.strip().replace("\t","")
-                if line and "#" == line[0]:
-                    continue
-                result = find_path.search(line)
-                if result and Path(result.group(1)).is_file():
-                    src_video_path = Path(result.group(1))
-        if src_video_path is not None:
-            qp_file_path = Path(str(src_video_path) + ".qp")
-            if qp_file_path.is_file():
-                self.import_file(self.import_qp, qp_file_path, override_list_name='qp_file')
+        try:
+            with open(self.main.script_path, 'rb') as f:
+                import re
+                find_path = re.compile("a\s*=\s*.{1}[\"\']([^\"\']+)[\"\']")
+                for line in f:
+                    line = line.decode('utf-8').strip().replace("\t","")
+                    if line and "#" == line[0]:
+                        continue
+                    result = find_path.search(line)
+
+                    if result and Path(result.group(1)).is_file():
+                        src_video_path = Path(result.group(1))
+            if src_video_path is not None:
+                qp_file_path = Path(str(src_video_path) + ".qp")
+                if qp_file_path.is_file():
+                    self.import_file(self.import_qp, qp_file_path, override_list_name='qp_file')
+        except UnicodeDecodeError:
+             pass
 
     def on_import_file_clicked(self, checked: Optional[bool] = None) -> None:
         filter_str = ';;'.join(self.supported_file_types.keys())

@@ -16,7 +16,7 @@ from vspreview.core import (
 from vspreview.models import Outputs
 from vspreview.utils import (
     add_shortcut, debug, get_usable_cpus_count, qt_silent_call,
-    set_qobject_names,
+    set_qobject_names, modify_shortcut_handler
 )
 from vspreview.widgets import (
     ComboBox, StatusBar, TimeEdit, Timeline, FrameEdit,

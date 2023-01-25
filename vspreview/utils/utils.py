@@ -83,11 +83,15 @@ def main_window() -> AbstractMainWindow:
     raise RuntimeError
 
 
-def add_shortcut(key: int, handler: Callable[[], None], widget: Optional[Qt.QWidget] = None) -> None:
+def add_shortcut(key: int, handler: Callable[[], None], widget: Optional[Qt.QWidget] = None) -> Qt.QShortcut:
     if widget is None:
         widget = main_window()
-    Qt.QShortcut(Qt.QKeySequence(key), widget).activated.connect(handler)  # type: ignore
+    _shortcut = Qt.QShortcut(Qt.QKeySequence(key), widget)
+    _shortcut.activated.connect(handler)  # type: ignore
+    return _shortcut
 
+def modify_shortcut_handler(_shortcut:Qt.QShortcut, handler: Callable[[], None]) -> None:
+    _shortcut.activated.connect(handler)
 
 def fire_and_forget(f: Callable[..., T]) -> Callable[..., T]:
     from asyncio import get_event_loop
